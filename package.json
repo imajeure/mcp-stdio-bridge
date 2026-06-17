@@ -1,0 +1,56 @@
+{
+  "name": "@imajeure/mcp-stdio-bridge",
+  "version": "0.1.0",
+  "description": "Wrap any stdio MCP server and serve it over Streamable HTTP, with a self-healing supervisor: auto-respawn on crash and readiness-gated systemd watchdog.",
+  "type": "module",
+  "main": "index.js",
+  "bin": {
+    "mcp-stdio-bridge": "cli.js"
+  },
+  "files": [
+    "index.js",
+    "cli.js",
+    "smart-bridge.js",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "start": "node cli.js",
+    "test": "node --test"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "stdio",
+    "bridge",
+    "proxy",
+    "streamable-http",
+    "supervisor",
+    "self-heal",
+    "systemd",
+    "watchdog"
+  ],
+  "license": "Apache-2.0",
+  "author": "Imajeure, Inc. <oss@imajeure.com>",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/server-everything": "^2026.1.26"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/imajeure/mcp-stdio-bridge.git"
+  },
+  "homepage": "https://github.com/imajeure/mcp-stdio-bridge#readme",
+  "bugs": {
+    "url": "https://github.com/imajeure/mcp-stdio-bridge/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
