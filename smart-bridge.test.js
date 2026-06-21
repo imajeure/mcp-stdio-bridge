@@ -45,10 +45,19 @@ test("withTimeout resolves a fast promise", async () => {
 });
 
 test("withTimeout rejects a hanging promise with TimeoutError", async () => {
-  await assert.rejects(
-    () => withTimeout(new Promise(() => {}), 20, "slow"),
-    (e) => e instanceof TimeoutError
-  );
+  // Keep the event loop alive while withTimeout's unref'd timer fires. In production
+  // withTimeout always runs alongside the live server/watchdog; in isolation the
+  // unref'd timeout would otherwise let an empty loop drain before it fires (Node <=22),
+  // which the node:test runner reports as "Promise resolution is still pending".
+  const keepAlive = setTimeout(() => {}, 1000);
+  try {
+    await assert.rejects(
+      () => withTimeout(new Promise(() => {}), 20, "slow"),
+      (e) => e instanceof TimeoutError
+    );
+  } finally {
+    clearTimeout(keepAlive);
+  }
 });
 
 // ── ChildSupervisor: gentle respawn ──────────────────────────────────────────

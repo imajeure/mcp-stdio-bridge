@@ -1,6 +1,6 @@
 # mcp-stdio-bridge
 
-[![npm](https://img.shields.io/npm/v/@imajeure/mcp-stdio-bridge.svg)](https://www.npmjs.com/package/@imajeure/mcp-stdio-bridge) ![node](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg) ![license](https://img.shields.io/badge/license-Apache--2.0-blue.svg)
+[![CI](https://github.com/imajeure/mcp-stdio-bridge/actions/workflows/ci.yml/badge.svg)](https://github.com/imajeure/mcp-stdio-bridge/actions/workflows/ci.yml) [![npm](https://img.shields.io/npm/v/@imajeure/mcp-stdio-bridge.svg)](https://www.npmjs.com/package/@imajeure/mcp-stdio-bridge) ![node](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg) ![license](https://img.shields.io/badge/license-Apache--2.0-blue.svg)
 
 **Wrap any stdio MCP server and serve it over Streamable HTTP — with a
 self-healing supervisor in front of it.**
