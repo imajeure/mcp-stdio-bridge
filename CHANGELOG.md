@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-06-25
+
+### Security
+- Enforce the `Origin` header server-side as DNS-rebinding protection, per the
+  MCP specification. The existing `allowedOrigins` (`--allow-origin` /
+  `BRIDGE_ALLOW_ORIGIN`) now drives both the CORS header and server-side
+  enforcement: with the default `*` any origin is allowed (no behaviour change);
+  set specific origins and a request with a disallowed `Origin` gets `403`
+  (before auth). Requests with no `Origin` header (non-browser clients) are
+  always allowed; the opaque `null` origin is rejected.
+
+### Fixed
+- Report the real package version over MCP — read from `package.json` instead of
+  a hardcoded constant that had drifted from the published version.
+
+### Changed
+- Require Node.js `>=22`; the previous `>=18` floor covered releases that are now
+  end-of-life. CI runs on Node 22 and 24.
+- Mark the package for npm provenance on publish (`publishConfig.provenance`).
+
 ## [0.1.0] - 2026-06-19
 
 ### Added
@@ -22,5 +42,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `cli.js` entry point (`mcp-stdio-bridge`) and an integration + self-heal test
   suite.
 
-[Unreleased]: https://github.com/imajeure/mcp-stdio-bridge/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/imajeure/mcp-stdio-bridge/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/imajeure/mcp-stdio-bridge/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/imajeure/mcp-stdio-bridge/releases/tag/v0.1.0

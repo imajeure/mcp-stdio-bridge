@@ -17,6 +17,7 @@
 
 import express from "express";
 import { randomUUID } from "node:crypto";
+import { createRequire } from "node:module";
 import { Server } from "@modelcontextprotocol/sdk/server/index.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -39,7 +40,12 @@ import {
   selfReport,
 } from "./smart-bridge.js";
 
-export const VERSION = "1.0.0";
+// Single source of version truth: the package manifest (always included in the
+// npm tarball), so the bridge can never report a version that has drifted from
+// what was published.
+const require = createRequire(import.meta.url);
+export const VERSION = require("./package.json").version;
+
 const DEFAULT_READY_TIMEOUT_MS = 2500;
 
 // The /healthz + /ready prefix is derived from the mount path (drop a trailing
@@ -47,6 +53,19 @@ const DEFAULT_READY_TIMEOUT_MS = 2500;
 export function deriveRoutePrefix(mountPath, override) {
   if (override !== undefined && override !== null) return override;
   return mountPath.replace(/\/mcp$/, "");
+}
+
+// Origin enforcement for DNS-rebinding protection. The MCP spec requires servers
+// to validate the Origin header on incoming connections. The same allowedOrigins
+// that sets the CORS header is enforced server-side here: the wildcard "*" (the
+// default) allows any origin (no enforcement); otherwise a request whose Origin
+// is not listed is rejected. A request with no Origin header (a non-browser
+// client) is always allowed; the opaque "null" origin is rejected.
+export function isOriginAllowed(origin, allowedOrigins) {
+  if (allowedOrigins.includes("*")) return true;
+  if (origin === undefined) return true;
+  if (origin === "null") return false;
+  return allowedOrigins.includes(origin);
 }
 
 /**
@@ -148,6 +167,22 @@ export function createBridge(options = {}) {
     res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
     res.setHeader("Access-Control-Allow-Headers", "Content-Type, Accept, Mcp-Session-Id, Authorization");
     res.setHeader("Access-Control-Expose-Headers", "Mcp-Session-Id");
+    next();
+  });
+
+  // DNS-rebinding guard: enforce the Origin allowlist server-side (the CORS
+  // header alone is advisory). With the default ["*"] this is a no-op; set
+  // specific origins to enforce. CORS preflight is exempt; a disallowed Origin
+  // is rejected before any session work or auth.
+  app.use((req, res, next) => {
+    if (req.method === "OPTIONS") return next();
+    if (!isOriginAllowed(req.headers["origin"], allowedOrigins)) {
+      return res.status(403).json({
+        jsonrpc: "2.0",
+        error: { code: -32003, message: "Forbidden: origin not allowed" },
+        id: null,
+      });
+    }
     next();
   });
 

@@ -20,7 +20,8 @@ Flags:
   --host <host>          Bind address (default 127.0.0.1, env BRIDGE_HOST)
   --port <port>          Port (default 3000, env PORT)
   --path <path>          MCP mount path (default /mcp, env BRIDGE_PATH)
-  --allow-origin <orig>  CORS allowed origin; repeatable (default *, env BRIDGE_ALLOW_ORIGIN)
+  --allow-origin <orig>  Allowed origin — sets CORS and enforces a server-side
+                         rebinding guard; repeatable (default *, env BRIDGE_ALLOW_ORIGIN)
   --token <token>        Require this bearer token on the MCP endpoint (env BRIDGE_TOKEN)
   -h, --help             Show this help
 
