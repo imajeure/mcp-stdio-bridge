@@ -3,9 +3,10 @@
  *
  * Wraps the canonical @modelcontextprotocol/server-everything stdio server
  * (a devDependency), then:
- *   1. completes an MCP initialize over HTTP and lists the wrapped tools, and
+ *   1. completes an MCP initialize over HTTP and lists the wrapped tools,
  *   2. kills the child process and confirms the supervisor auto-respawns it and
- *      the bridge recovers — the headline self-heal behaviour.
+ *      the bridge recovers — the headline self-heal behaviour, and
+ *   3. checks the Origin (DNS-rebinding) guard rejects a disallowed origin.
  *
  * Run: `npm test`
  */
@@ -13,7 +14,7 @@
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
-import { startBridge } from "./index.js";
+import { startBridge, createBridge, isOriginAllowed } from "./index.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 
@@ -101,5 +102,38 @@ test("self-heal: killing the child auto-respawns it and the bridge recovers", { 
     assert.ok(tools.some((t) => t.name === "echo"), "tools list works again after self-heal");
   } finally {
     await client.close();
+  }
+});
+
+// ── Origin validation (DNS-rebinding guard) ──────────────────────────────────
+test("isOriginAllowed: wildcard allows all, otherwise the list is enforced", () => {
+  assert.equal(isOriginAllowed("http://anything.example.com", ["*"]), true, "wildcard allows any origin");
+  assert.equal(isOriginAllowed(undefined, ["https://app.example.com"]), true, "no Origin (non-browser) is allowed");
+  assert.equal(isOriginAllowed("null", ["https://app.example.com"]), false, "opaque null is rejected");
+  assert.equal(isOriginAllowed("https://app.example.com", ["https://app.example.com"]), true, "listed origin allowed");
+  assert.equal(isOriginAllowed("http://evil.example.com", ["https://app.example.com"]), false, "unlisted origin rejected");
+});
+
+test("Origin guard: a disallowed Origin gets 403, before auth, without spawning the child", async () => {
+  // createBridge builds the app without starting the supervisor, so the guard
+  // short-circuits before any child access — no wrapped server needed.
+  const { app } = createBridge({
+    command: process.execPath,
+    allowedOrigins: ["http://localhost:9999"],
+  });
+  const server = await new Promise((resolve) => {
+    const s = app.listen(0, "127.0.0.1", () => resolve(s));
+  });
+  const port = server.address().port;
+  try {
+    const res = await fetch(`http://127.0.0.1:${port}/mcp`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Origin: "http://evil.example.com" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "initialize", params: {} }),
+    });
+    assert.equal(res.status, 403);
+  } finally {
+    server.closeAllConnections?.();
+    server.close();
   }
 });

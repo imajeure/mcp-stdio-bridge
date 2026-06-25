@@ -1,6 +1,6 @@
 # mcp-stdio-bridge
 
-[![CI](https://github.com/imajeure/mcp-stdio-bridge/actions/workflows/ci.yml/badge.svg)](https://github.com/imajeure/mcp-stdio-bridge/actions/workflows/ci.yml) [![npm](https://img.shields.io/npm/v/@imajeure/mcp-stdio-bridge.svg)](https://www.npmjs.com/package/@imajeure/mcp-stdio-bridge) ![node](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg) ![license](https://img.shields.io/badge/license-Apache--2.0-blue.svg)
+[![CI](https://github.com/imajeure/mcp-stdio-bridge/actions/workflows/ci.yml/badge.svg)](https://github.com/imajeure/mcp-stdio-bridge/actions/workflows/ci.yml) [![npm](https://img.shields.io/npm/v/@imajeure/mcp-stdio-bridge.svg)](https://www.npmjs.com/package/@imajeure/mcp-stdio-bridge) [![OpenSSF Scorecard](https://api.scorecard.dev/projects/github.com/imajeure/mcp-stdio-bridge/badge)](https://scorecard.dev/viewer/?uri=github.com/imajeure/mcp-stdio-bridge) ![node](https://img.shields.io/badge/node-%3E%3D22-brightgreen.svg) ![license](https://img.shields.io/badge/license-Apache--2.0-blue.svg)
 
 **Wrap any stdio MCP server and serve it over Streamable HTTP — with a
 self-healing supervisor in front of it.**
@@ -76,8 +76,24 @@ side; environment variables provide defaults and flags override them.
 | `--host <host>` | `BRIDGE_HOST` | `127.0.0.1` | Bind address. Keep it loopback unless something else gates access. |
 | `--port <port>` | `PORT` | `3000` | Port to listen on. |
 | `--path <path>` | `BRIDGE_PATH` | `/mcp` | MCP mount path. `/healthz` + `/ready` are derived alongside it. |
-| `--allow-origin <o>` | `BRIDGE_ALLOW_ORIGIN` | `*` | CORS allowed origin(s); flag is repeatable, env is comma-separated. |
+| `--allow-origin <o>` | `BRIDGE_ALLOW_ORIGIN` | `*` | Allowed origin(s) — sets the CORS header **and** enforces a server-side Origin check (DNS-rebinding guard). Repeatable flag, comma-separated env. The default `*` allows any origin; set specific origins to enforce. |
 | `--token <token>` | `BRIDGE_TOKEN` | — | If set, require `Authorization: Bearer <token>` on the MCP endpoint. |
+
+### Security
+
+The bridge binds to loopback by default. Two opt-in controls harden a networked
+deployment — both off by default to keep the transparent-proxy case frictionless:
+
+- **Bearer token** (`--token` / `BRIDGE_TOKEN`): when set, every MCP request must
+  send `Authorization: Bearer <token>` or gets **401** (before any session work).
+- **Origin enforcement** (`--allow-origin` / `BRIDGE_ALLOW_ORIGIN`): per the MCP
+  spec, the `Origin` header is validated as DNS-rebinding protection. The default
+  `*` allows any origin; set specific origins and a request carrying a disallowed
+  `Origin` gets **403** (before auth). Requests with no `Origin` header
+  (non-browser clients) are always allowed.
+
+For any non-local exposure, run the bridge as a least-privileged user behind an
+authenticated reverse proxy / tunnel.
 
 ### Programmatic API
 
@@ -90,6 +106,7 @@ const bridge = await startBridge({
   port: 3000,
   mountPath: "/mcp",
   token: process.env.BRIDGE_TOKEN, // optional
+  allowedOrigins: ["https://app.example.com"], // optional; default ["*"]
 });
 // ... later ...
 await bridge.stop();
@@ -123,10 +140,11 @@ npm test   # node --test
 ```
 
 Unit tests cover the supervisor logic (respawn ladder, escalation, readiness-gated
-heartbeat, `/ready` route). The integration test wraps the real
-`@modelcontextprotocol/server-everything`, completes an MCP `initialize` over
+heartbeat, `/ready` route) and `Origin` validation. The integration test wraps the
+real `@modelcontextprotocol/server-everything`, completes an MCP `initialize` over
 HTTP, lists its tools, then **kills the child and asserts the bridge respawns it
-and recovers**.
+and recovers**; a further test confirms a request with a disallowed `Origin` is
+rejected with **403**.
 
 ## License
 
