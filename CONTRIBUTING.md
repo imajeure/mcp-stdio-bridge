@@ -22,7 +22,7 @@ HTTP, then kills the child and asserts the bridge respawns it and recovers.
 - Keep changes focused — one concern per PR.
 - Add or update tests for behaviour changes, especially in the supervisor,
   respawn, and readiness paths.
-- Make sure `npm test` passes locally; CI runs the same suite on Node 20 and 22.
+- Make sure `npm test` passes locally; CI runs the same suite on Node 22 and 24.
 - Note user-facing changes in `CHANGELOG.md` under `## [Unreleased]`.
 
 ## Reporting bugs
