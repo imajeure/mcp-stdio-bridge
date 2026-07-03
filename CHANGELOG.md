@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- Document MCP client and transport compatibility, including tested Streamable
+  HTTP coverage and known limitations for stdio-only and SSE-only clients.
+
 ## [0.1.1] - 2026-06-25
 
 ### Security

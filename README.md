@@ -51,6 +51,21 @@ curl -s localhost:3000/ready     # {"ready":true}  (real tools/list round-trip t
 Point any MCP HTTP client at `http://localhost:3000/mcp` and it will see the
 wrapped server's tools, resources, and prompts transparently.
 
+## Client and transport compatibility
+
+`mcp-stdio-bridge` exposes the wrapped stdio server as an MCP Streamable HTTP
+endpoint. The table below separates what is covered by this repository's tests
+from client integrations that should work through the same transport but still
+need client-specific verification.
+
+| Client or transport | Status | Notes |
+|---|---|---|
+| MCP TypeScript SDK `StreamableHTTPClientTransport` | Verified | Covered by the integration test in `bridge.test.js`: it initializes over HTTP, lists tools, calls the wrapped `echo` tool, and verifies recovery after the child process is killed. |
+| Generic Streamable HTTP MCP clients | Expected | Point the client at `http://<host>:<port><path>`; the default local URL is `http://localhost:3000/mcp`. Use `--token` / `BRIDGE_TOKEN` if the endpoint is exposed beyond loopback. |
+| Browser-based MCP clients | Expected with origin configuration | Set `--allow-origin` / `BRIDGE_ALLOW_ORIGIN` to the exact browser origin. Requests with an unlisted `Origin` are rejected with `403`; non-browser requests without an `Origin` header are allowed. |
+| stdio-only MCP clients | Not directly supported | This bridge converts a stdio server into Streamable HTTP. A client that only launches stdio servers should run the original stdio server directly instead of this bridge. |
+| SSE-only MCP clients | Not supported | The bridge serves Streamable HTTP, not the older SSE transport. Use a client that supports Streamable HTTP. |
+
 ### See the self-heal in action
 
 ```sh
